@@ -21,6 +21,7 @@ from config import (
     DEEPSEEK_BASE_URL,
     MODEL_M3,
     M3_TEMPERATURE,
+    USE_THINKING_MODE,
 )
 
 
@@ -39,6 +40,18 @@ def _client() -> OpenAI:
         )
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
 
+def _thinking_extra_body() -> dict:
+    """Build the `extra_body` dict that controls DeepSeek V4's thinking mode.
+ 
+    DeepSeek V4 has thinking mode ON by default. To disable it, the OpenAI
+    SDK exposes provider-specific knobs via `extra_body`, which the SDK
+    passes through verbatim to the API.
+ 
+    Returns a dict like {"thinking": {"type": "disabled"}} or
+    {"thinking": {"type": "enabled"}} depending on config.
+    """
+    mode = "enabled" if USE_THINKING_MODE else "disabled"
+    return {"thinking": {"type": mode}}
 
 def chat(
     messages: list[dict],
@@ -67,5 +80,6 @@ def chat(
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
+        extra_body=_thinking_extra_body()
     )
     return response.choices[0].message.content

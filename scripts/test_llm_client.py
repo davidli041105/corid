@@ -37,7 +37,7 @@ def main():
     ]
 
     try:
-        reply = chat(test_messages, max_tokens=500)
+        reply = chat(test_messages, max_tokens=50)
     except Exception as e:
         print(f"FAILED. Error type: {type(e).__name__}")
         print(f"Error message: {e}")
