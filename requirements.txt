@@ -1,2 +1,17 @@
-openai>=1.0.0
-python-dotenv>=1.0.0
+# CoRID runtime dependencies.
+#
+# openai     — official SDK, used against iFLYTEK Astron's OpenAI-compatible
+#              endpoint via llm_client.py
+# python-dotenv — loads ASTRON_API_KEY from .env
+# ddgs       — DuckDuckGo search library, used by tools/web_search.py for
+#              M3 Agent 1's web_search tool. No API key required; depends
+#              on the library reverse-engineering DuckDuckGo's public
+#              endpoints. Snippets-only output (title, URL, body), no full
+#              page fetching.
+#
+# Versions are pinned with a permissive lower bound + caret-style upper to
+# avoid accidental breakage on major upgrades.
+
+openai>=1.0.0,<2.0.0
+python-dotenv>=1.0.0,<2.0.0
+ddgs>=9.14.0,<10.0.0
