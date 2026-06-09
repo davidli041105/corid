@@ -17,11 +17,15 @@ trims an already-normalized bundle based on M3's judgment.
 
 Design principles:
   - Less interference, more raw evidence. M3 decides what's useful.
-  - Drop only clear label-leakage fields (`product`, `cpe`, `cpe23`, `tags`)
-    and clear non-evidence noise (Shodan-internal opaque hashes).
-  - Keep network/host context (`org`, `isp`, `cloud`) as evidence even
-    though they don't identify the device — they diversify the evidence
-    source and may help M3 in edge cases.
+  - Keep all probe-derived signals as evidence — including `cpe`, `cpe23`,
+    `product`, `tags`. These were previously dropped under a "label leakage"
+    concern, but every field in a Shodan record is derived by Shodan from
+    the probe response; there is no clean "evidence vs. label" split. PMI
+    filtering downstream handles signals that turn out to be corpus-generic.
+  - Drop only clear non-evidence noise (Shodan-internal opaque hashes like
+    `title_hash`, scanner metadata in `_shodan`, etc.).
+  - Keep network/host context (`org`, `isp`, `cloud`) as evidence — they
+    diversify the evidence source.
   - Vendor-specific parsed dicts (e.g., `kyocera_printer_panel`) pass
     through unchanged. Yes, the field name contains the vendor — accepted
     as part of the evidence M3 reads.
@@ -48,11 +52,18 @@ HTTP_HASH_FIELDS = {
     "headers_hash", "server_hash", "html_hash", "securitytxt_hash",
 }
 
-# Fields to strip from the raw record entirely — label leakage.
-# `product`: literally concatenates vendor + model.
-# `cpe`, `cpe23`: structured CPE strings encoding vendor + model.
-# `tags`: Shodan category tags that may include device-category equivalents.
-LEAKAGE_FIELDS = {"product", "cpe", "cpe23", "tags"}
+# Fields we previously dropped as "label leakage" but have since reintroduced
+# as evidence. Rationale: every field in a Shodan record is derived by Shodan
+# from the probe response — there's no clean "evidence vs. label" split.
+# `cpe`/`cpe23`/`product`/`tags` are at the most-pre-computed end of the
+# probe-derived signal spectrum, but they're still Shodan's interpretations
+# of the probe, not external ground truth. M3 reads them as evidence;
+# PMI filtering downstream handles signals that turn out to be corpus-generic.
+#
+# Kept as a NAMED constant rather than removed entirely so the design history
+# is visible in the code — anyone reading this will know we considered the
+# leakage concern and chose to admit these fields with the framing above.
+PREVIOUSLY_RESTRICTED_FIELDS = {"product", "cpe", "cpe23", "tags"}
 
 # Shodan-internal noise we don't want in evidence.
 # `_shodan`: scanner metadata (region, module, crawler info).
@@ -132,10 +143,12 @@ def normalize_record(record: dict) -> dict:
     evidence: dict[str, Any] = {}
 
     # The fields we explicitly handle. Everything else from the source
-    # record that isn't a label, leakage, or noise gets passed through
-    # cleaned (preserving the "less interference" principle).
+    # record that isn't a label or Shodan-internal noise gets passed
+    # through cleaned (preserving the "less interference" principle).
+    # PREVIOUSLY_RESTRICTED_FIELDS (cpe/cpe23/product/tags) are NOT skipped
+    # — they pass through as evidence, per the reintroduction decision.
     label_keys = {"devicetype", "vendor", "model"}
-    skip_keys = LEAKAGE_FIELDS | NOISE_FIELDS | label_keys
+    skip_keys = NOISE_FIELDS | label_keys
 
     for k, v in record.items():
         if k in skip_keys:

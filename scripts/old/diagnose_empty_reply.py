@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL_M3
+from scripts.old.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL_M3
 
 
 def main():

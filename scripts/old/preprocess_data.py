@@ -281,7 +281,7 @@ def main():
 
     # --- Real run from here on ---
     # Import LLM client lazily so --dry-run doesn't require API key.
-    from llm_client import chat
+    from scripts.old.llm_client import chat
 
     # Flatten per-field counters into a single set of unique strings.
     all_chinese = set()
